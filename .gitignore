@@ -1,0 +1,18 @@
+# Ignore IntelliJ IDEA project files
+.idea/
+# Ignore compiled Java class files
+*.class
+# Ignore build output directory (common for IntelliJ IDEA)
+out/
+# Ignore IntelliJ IDEA module files
+*.iml
+# Ignore backup files
+*~
+# Ignore Gradle directories
+getting-started/.gradle/
+getting-started/gradle/
+# Ignore build directory (common for Gradle, Maven, etc.)
+getting-started/build/
+
+.gradle
+gradle
