@@ -27,7 +27,7 @@ public class ElasticsearchCRUD {
         updateDocument(documentId, "Jane Doe", 25);
 
         // DELETE
-//        deleteDocument(documentId);
+        deleteDocument(documentId);
     }
 
     public static void createDocument(String id, String name, int age) throws IOException {
