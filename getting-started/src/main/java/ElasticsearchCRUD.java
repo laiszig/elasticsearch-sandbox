@@ -17,16 +17,12 @@ public class ElasticsearchCRUD {
     public static void main(String[] args) throws IOException {
         String documentId = "1";
 
-        // CREATE
         createDocument(documentId, "John Doe", 30);
 
-        // READ
         readDocument(documentId);
 
-        // UPDATE
         updateDocument(documentId, "Jane Doe", 25);
 
-        // DELETE
         deleteDocument(documentId);
     }
 
