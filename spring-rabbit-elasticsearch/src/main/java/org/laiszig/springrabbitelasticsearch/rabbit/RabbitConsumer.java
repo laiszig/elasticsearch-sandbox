@@ -16,13 +16,15 @@ public class RabbitConsumer {
         this.documentService = documentService;
     }
 
-    // TODO: Manual Ack, Deadletter-queue
-    @RabbitListener(queues = "doc-queue")
+    @RabbitListener(queues = RabbitConfig.MAIN_QUEUE)
     public void receive(String content) throws IOException {
         try {
             documentService.upsertDocument(content);
-        } catch (IllegalArgumentException e) {
-            System.out.println(e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Elasticsearch is down, moving message to DLQ");
+            throw new RuntimeException("Failed to process message, retrying later...");
         }
     }
+
+
 }
