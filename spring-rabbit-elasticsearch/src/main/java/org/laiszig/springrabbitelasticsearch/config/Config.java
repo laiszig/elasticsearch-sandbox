@@ -1,4 +1,4 @@
-package org.laiszig.springrabbitelasticsearch;
+package org.laiszig.springrabbitelasticsearch.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;

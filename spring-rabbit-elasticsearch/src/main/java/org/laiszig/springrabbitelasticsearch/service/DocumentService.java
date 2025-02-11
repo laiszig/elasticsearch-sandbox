@@ -7,19 +7,20 @@ import co.elastic.clients.elasticsearch.core.UpdateResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.laiszig.springrabbitelasticsearch.Document;
+import org.laiszig.springrabbitelasticsearch.exceptions.DocumentNotFoundException;
+import org.laiszig.springrabbitelasticsearch.exceptions.InvalidInputException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-// TODO: Create custom exceptions
 @Service
 public class DocumentService {
 
+    public static final String DOCUMENTS = "documents";
     private ElasticsearchClient esClient;
     private ObjectMapper mapper;
     private static final Pattern EMAIL_REGEX = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
@@ -35,7 +36,7 @@ public class DocumentService {
         performValidations(newDoc);
 
         UpdateResponse<Document> updateResponse = esClient.update(u -> u
-                .index("documents")
+                .index(DOCUMENTS)
                 .id(newDoc.id())
                 .doc(newDoc)
                 .docAsUpsert(true), Document.class);
@@ -45,7 +46,7 @@ public class DocumentService {
     public List<Document> getDocuments() {
         try {
             SearchResponse<Document> response = esClient.search(s -> s
-                            .index("documents")
+                            .index(DOCUMENTS)
                             .query(q -> q.matchAll(m -> m)),
                     Document.class);
 
@@ -61,16 +62,14 @@ public class DocumentService {
 
     public Document findDocument(String id) throws IOException {
         GetResponse<Document> response = esClient.get(g -> g
-                .index("documents")
+                .index(DOCUMENTS)
                 .id(id), Document.class);
 
-        if (response.found()) {
-            System.out.println("Document name " + response.source().name());
-            return response.source();
-        } else {
-            System.out.println("Document not found");
-            throw new NoSuchElementException();
+        if (!response.found()) {
+            throw new DocumentNotFoundException("Document not found.");
         }
+        System.out.println("Document name " + response.source().name());
+        return response.source();
     }
 
     private static void performValidations(Document newDoc) {
@@ -82,23 +81,23 @@ public class DocumentService {
 
     private static void validateId(Document newDoc) {
         if (newDoc.id() == null || newDoc.id().isBlank()) {
-            throw new IllegalArgumentException("ID cannot be null or empty");
+            throw new InvalidInputException("ID cannot be null or empty");
         }
     }
 
     private static void validateName(Document newDoc) {
         String nameRegex = "^[A-Za-z ]+$";
         if (newDoc.name() == null || newDoc.name().isBlank()) {
-            throw new IllegalArgumentException("Name cannot be null or empty");
+            throw new InvalidInputException("Name cannot be null or empty");
         }
         if (!newDoc.name().matches(nameRegex)) {
-            throw new IllegalArgumentException("Name must contain only letters and spaces: " + newDoc.name());
+            throw new InvalidInputException("Name must contain only letters and spaces: " + newDoc.name());
         }
     }
 
     private static void validateAge(Document newDoc) {
         if (newDoc.age() < 18 || newDoc.age() > 120) {
-            throw new IllegalArgumentException("Age must be between 0 and 150: " + newDoc.age());
+            throw new InvalidInputException("Age must be between 0 and 150: " + newDoc.age());
         }
     }
 

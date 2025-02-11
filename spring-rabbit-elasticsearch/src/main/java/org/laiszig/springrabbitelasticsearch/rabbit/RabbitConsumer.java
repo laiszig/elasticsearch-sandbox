@@ -4,9 +4,6 @@ import org.laiszig.springrabbitelasticsearch.service.DocumentService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
-//TODO: Create custom exceptions
 @Component
 public class RabbitConsumer {
 
@@ -17,14 +14,13 @@ public class RabbitConsumer {
     }
 
     @RabbitListener(queues = RabbitConfig.MAIN_QUEUE)
-    public void receive(String content) throws IOException {
+    public void receive(String content) {
         try {
             documentService.upsertDocument(content);
         } catch (Exception e) {
             System.err.println("Elasticsearch is down, moving message to DLQ");
-            throw new RuntimeException("Failed to process message, retrying later...");
+            throw new RuntimeException("Failed to process message");
         }
     }
-
 
 }

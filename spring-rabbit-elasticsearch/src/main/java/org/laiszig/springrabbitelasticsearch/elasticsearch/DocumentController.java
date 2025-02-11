@@ -2,6 +2,7 @@ package org.laiszig.springrabbitelasticsearch.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import org.laiszig.springrabbitelasticsearch.Document;
+import org.laiszig.springrabbitelasticsearch.exceptions.DocumentNotFoundException;
 import org.laiszig.springrabbitelasticsearch.service.DocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @RestController
 public class DocumentController {
@@ -29,7 +29,7 @@ public class DocumentController {
         try {
             Document document = documentService.findDocument(id);
             return new ResponseEntity<>(document, HttpStatus.OK);
-        } catch (NoSuchElementException e){
+        } catch (DocumentNotFoundException e){
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
