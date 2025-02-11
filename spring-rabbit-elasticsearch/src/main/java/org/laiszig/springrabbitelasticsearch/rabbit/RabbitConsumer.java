@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+//TODO: Create custom exceptions
 @Component
 public class RabbitConsumer {
 
@@ -15,8 +16,13 @@ public class RabbitConsumer {
         this.documentService = documentService;
     }
 
+    // TODO: Manual Ack, Deadletter-queue
     @RabbitListener(queues = "doc-queue")
     public void receive(String content) throws IOException {
-        documentService.upsertDocument(content);
+        try {
+            documentService.upsertDocument(content);
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
     }
 }

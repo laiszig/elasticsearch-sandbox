@@ -34,17 +34,19 @@ public class DocumentController {
         }
     }
 
-
-
     @GetMapping("/documents")
     public List<Document> getAllDocuments() {
         return documentService.getDocuments();
     }
 
     @PostMapping("/create-index")
-    public ResponseEntity<String> createIndex(@RequestBody String index) throws IOException {
-        esClient.indices()
-                .create(c -> c.index(index));
-        return ResponseEntity.ok("Index 'documents' created successfully.");
+    public ResponseEntity<String> createIndex(@RequestBody String index) {
+        try {
+            esClient.indices()
+                    .create(c -> c.index(index));
+            return ResponseEntity.ok(String.format("Index %s created successfully.", index));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Unable to create index.");
+        }
     }
 }
