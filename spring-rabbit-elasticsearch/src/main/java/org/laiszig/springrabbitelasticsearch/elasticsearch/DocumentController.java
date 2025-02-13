@@ -30,7 +30,7 @@ public class DocumentController {
             Document document = documentService.findDocument(id);
             return new ResponseEntity<>(document, HttpStatus.OK);
         } catch (DocumentNotFoundException e){
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
