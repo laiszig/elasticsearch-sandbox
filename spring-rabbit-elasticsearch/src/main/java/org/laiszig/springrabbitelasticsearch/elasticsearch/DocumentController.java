@@ -1,7 +1,7 @@
 package org.laiszig.springrabbitelasticsearch.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import org.laiszig.springrabbitelasticsearch.Document;
+import org.laiszig.springrabbitelasticsearch.entity.Document;
 import org.laiszig.springrabbitelasticsearch.exceptions.DocumentNotFoundException;
 import org.laiszig.springrabbitelasticsearch.service.DocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,7 @@ public class DocumentController {
     @GetMapping("/documents/{id}")
     public ResponseEntity<Document> getDocument(@PathVariable String id) throws IOException {
         try {
-            Document document = documentService.findDocument(id);
+            Document document = documentService.getDocument(id);
             return new ResponseEntity<>(document, HttpStatus.OK);
         } catch (DocumentNotFoundException e){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

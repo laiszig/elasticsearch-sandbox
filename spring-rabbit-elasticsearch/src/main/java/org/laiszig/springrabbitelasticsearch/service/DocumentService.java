@@ -2,74 +2,54 @@ package org.laiszig.springrabbitelasticsearch.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateResponse;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.laiszig.springrabbitelasticsearch.Document;
+import org.laiszig.springrabbitelasticsearch.entity.Document;
+import org.laiszig.springrabbitelasticsearch.entity.dto.DocumentDTO;
 import org.laiszig.springrabbitelasticsearch.exceptions.DocumentNotFoundException;
 import org.laiszig.springrabbitelasticsearch.exceptions.InvalidInputException;
+import org.laiszig.springrabbitelasticsearch.repository.DocumentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 public class DocumentService {
 
-    public static final String DOCUMENTS = "documents";
-    private ElasticsearchClient esClient;
-    private ObjectMapper mapper;
+    private final DocumentRepository documentRepository;
+    private final ObjectMapper mapper;
     private static final Pattern EMAIL_REGEX = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     @Autowired
-    public DocumentService(ElasticsearchClient esClient, ObjectMapper mapper) {
-        this.esClient = esClient;
+    public DocumentService(DocumentRepository documentRepository, ObjectMapper mapper) {
+        this.documentRepository = documentRepository;
         this.mapper = mapper;
     }
 
     public void upsertDocument(String content) throws IOException {
-        Document newDoc = mapper.readValue(content, Document.class);
+        DocumentDTO dto = mapper.readValue(content, DocumentDTO.class);
+        Document newDoc = dto.toDocument();
+
         performValidations(newDoc);
 
-        UpdateResponse<Document> updateResponse = esClient.update(u -> u
-                .index(DOCUMENTS)
-                .id(newDoc.id())
-                .doc(newDoc)
-                .docAsUpsert(true), Document.class);
+        UpdateResponse<Document> updateResponse = documentRepository.getUpsertResponse(newDoc);
         System.out.println(updateResponse.result());
     }
 
     public List<Document> getDocuments() {
         try {
-            SearchResponse<Document> response = esClient.search(s -> s
-                            .index(DOCUMENTS)
-                            .query(q -> q.matchAll(m -> m)),
-                    Document.class);
-
-            return response.hits().hits().stream()
-                    .map(Hit::source)
-                    .collect(Collectors.toList());
-
+            return documentRepository.findAllDocuments();
         } catch (IOException e) {
             e.printStackTrace();
             return List.of();
         }
     }
 
-    public Document findDocument(String id) throws IOException {
-        GetResponse<Document> response = esClient.get(g -> g
-                .index(DOCUMENTS)
-                .id(id), Document.class);
-
-        if (!response.found()) {
-            throw new DocumentNotFoundException("Document not found.");
-        }
-        System.out.println("Document name " + response.source().name());
-        return response.source();
+    public Document getDocument(String id) throws IOException {
+        return documentRepository.findDocument(id);
     }
 
     private static void performValidations(Document newDoc) {
