@@ -3,6 +3,7 @@ package com.laiszig.springkafkaelasticsearch.controller;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.laiszig.springkafkaelasticsearch.entity.Document;
 import com.laiszig.springkafkaelasticsearch.exceptions.DocumentNotFoundException;
+import com.laiszig.springkafkaelasticsearch.producer.DocumentProducer;
 import com.laiszig.springkafkaelasticsearch.service.DocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,10 +17,12 @@ import java.util.List;
 public class DocumentController {
 
     private final DocumentService documentService;
+    private final DocumentProducer documentProducer;
 
     @Autowired
-    public DocumentController(DocumentService documentService) {
+    public DocumentController(DocumentService documentService, DocumentProducer documentProducer) {
         this.documentService = documentService;
+        this.documentProducer = documentProducer;
     }
 
     @GetMapping("/documents/{id}")
@@ -36,5 +39,12 @@ public class DocumentController {
     public List<Document> getAllDocuments() {
         return documentService.getDocuments();
     }
+
+    @PostMapping("/document")
+    public String sendDocument(@RequestBody Document document) {
+        documentProducer.sendDocument(document);
+        return "Document sent to Kafka!";
+    }
+
 
 }
