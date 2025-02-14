@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
@@ -29,11 +31,20 @@ public class DocumentService {
     public void upsertDocument(String content) throws IOException {
         DocumentDTO dto = mapper.readValue(content, DocumentDTO.class);
         Document newDoc = dto.toDocument();
+        System.out.println("Received request at: " + LocalDateTime.now() + " for document: " + newDoc.name());
 
-        performValidations(newDoc);
+        Optional<Document> optionalDoc = Optional.ofNullable(documentRepository.findDocument(newDoc.id()));
 
-        UpdateResponse<Document> updateResponse = documentRepository.getUpsertResponse(newDoc);
-        System.out.println(updateResponse.result());
+        if (optionalDoc.isPresent()) {
+            Document oldDoc = optionalDoc.get();
+
+            Document updatedDoc = oldDoc.withUpdatedFields(newDoc.name(), newDoc.age(), newDoc.email());
+
+            performValidations(updatedDoc);
+
+            UpdateResponse<Document> updateResponse = documentRepository.getUpsertResponse(newDoc);
+            System.out.println(updateResponse.result());
+        }
     }
 
     public List<Document> getDocuments() {
