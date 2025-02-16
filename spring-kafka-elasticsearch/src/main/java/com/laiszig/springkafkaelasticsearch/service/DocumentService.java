@@ -1,18 +1,18 @@
 package com.laiszig.springkafkaelasticsearch.service;
 
-import co.elastic.clients.elasticsearch.core.UpdateResponse;
+import co.elastic.clients.elasticsearch.core.GetResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laiszig.springkafkaelasticsearch.entity.Document;
 import com.laiszig.springkafkaelasticsearch.entity.DocumentDTO;
+import com.laiszig.springkafkaelasticsearch.entity.DocumentWithMetadata;
+import com.laiszig.springkafkaelasticsearch.exceptions.DocumentNotFoundException;
 import com.laiszig.springkafkaelasticsearch.exceptions.InvalidInputException;
 import com.laiszig.springkafkaelasticsearch.repository.DocumentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
@@ -28,22 +28,38 @@ public class DocumentService {
         this.mapper = mapper;
     }
 
+    @SuppressWarnings("DataFlowIssue")
     public void upsertDocument(String content) throws IOException {
         DocumentDTO dto = mapper.readValue(content, DocumentDTO.class);
         Document newDoc = dto.toDocument();
-        System.out.println("Received request at: " + LocalDateTime.now() + " for document: " + newDoc.name());
+        System.out.println("Received request...");
 
-        Optional<Document> optionalDoc = Optional.ofNullable(documentRepository.findDocument(newDoc.id()));
+        try {
+            GetResponse<Document> response = documentRepository.findDocument(newDoc.id());
+            Document updatedDoc = response.source()
+                    .withUpdatedFields(newDoc.name(), newDoc.age(), newDoc.email());
 
-        if (optionalDoc.isPresent()) {
-            Document oldDoc = optionalDoc.get();
+            validateAndUpsert(new DocumentWithMetadata(updatedDoc, response.primaryTerm(), response.seqNo()));
+        } catch (DocumentNotFoundException e) {
+            validateAndCreate(newDoc);
+        }
+    }
 
-            Document updatedDoc = oldDoc.withUpdatedFields(newDoc.name(), newDoc.age(), newDoc.email());
+    private void validateAndUpsert(DocumentWithMetadata docWithMetadata) {
+        try {
+            performValidations(docWithMetadata.document());
+            documentRepository.getUpsertResponse(docWithMetadata);
+        } catch (InvalidInputException | IllegalArgumentException | IOException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
 
-            performValidations(updatedDoc);
-
-            UpdateResponse<Document> updateResponse = documentRepository.getUpsertResponse(newDoc);
-            System.out.println(updateResponse.result());
+    private void validateAndCreate(Document doc) {
+        try {
+            performValidations(doc);
+            documentRepository.createNewDocument(doc);
+        } catch (InvalidInputException | IllegalArgumentException | IOException ex) {
+            System.err.println(ex.getMessage());
         }
     }
 
@@ -51,13 +67,13 @@ public class DocumentService {
         try {
             return documentRepository.findAllDocuments();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
             return List.of();
         }
     }
 
     public Document getDocument(String id) throws IOException {
-        return documentRepository.findDocument(id);
+        return documentRepository.findDocument(id).source();
     }
 
     private static void performValidations(Document newDoc) {
